@@ -2,9 +2,13 @@ const http = require("http");
 const express = require("express");
 const socketio = require("socket.io");
 const mongoose = require("mongoose");
+const cors = require("cors");
 
 // Initialize Express app and server
 const app = express();
+
+app.use(cors());
+
 const server = http.createServer(app);
 const io = socketio(server);
 
