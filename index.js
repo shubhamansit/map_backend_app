@@ -62,6 +62,11 @@ io.on("connection", (client) => {
   });
 });
 
+app.get("/", (req, res) => {
+  return res.json({
+    message: "server is live",
+  });
+});
 // Start the server
 server.listen(port, () => {
   console.log(`Server is up on port ${port}!`);
