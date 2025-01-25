@@ -43,14 +43,10 @@ io.on("connection", (client) => {
   console.log("New client connected!");
 
   client.on("location_update", async (data) => {
-    const { latitude, longitude } = data;
+    const { latitude, longitude, userId } = data;
 
     try {
-      // const newLocation = new Location({ latitude, longitude });
-      // await newLocation.save();
-      // console.log("Location saved:", newLocation);
-
-      io.emit("location_saved", { latitude, longitude });
+      io.emit("location_saved", { latitude, longitude, userId });
     } catch (error) {
       console.error("Error saving location:", error);
     }
