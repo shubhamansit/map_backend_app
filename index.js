@@ -225,7 +225,7 @@ app.get("/api/location/history", async (req, res) => {
           .format("YYYY-MM-DD HH:mm:ss"),
         formattedTime: moment(location.timestamp)
           .tz("Asia/Kolkata")
-          .format("DD MMM YYYY, h:mm A"),
+          .format("DD MMM YYYY, h:mm:ss A"),
       };
     });
 
