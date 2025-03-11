@@ -137,42 +137,53 @@ io.on("connection", (client) => {
 // API Routes
 
 // Get last location for a user
-app.get("/api/location/last/:userId", async (req, res) => {
+app.get("/api/location/last", async (req, res) => {
   try {
-    const { userId } = req.params;
+    // Use MongoDB aggregation to get the most recent location for each userId in a single query
+    const lastLocations = await Location.aggregate([
+      // Stage 1: Group by userId and find the document with the maximum timestamp
+      {
+        $group: {
+          _id: "$userId",
+          doc: { $top: { output: "$$ROOT", sortBy: { timestamp: -1 } } },
+        },
+      },
+      // Stage 2: Replace the root with the doc field to get the full document
+      { $replaceRoot: { newRoot: "$doc" } },
+    ]);
 
-    const lastLocation = await Location.findOne({
-      userId: mongoose.Types.ObjectId.isValid(userId) ? userId : null,
-    })
-      .sort({ timestamp: -1 })
-      .limit(1);
-
-    if (!lastLocation) {
-      return res
-        .status(404)
-        .json({ message: "No location data found for this user" });
+    if (!lastLocations.length) {
+      return res.json({
+        success: true,
+        count: 0,
+        data: [],
+      });
     }
 
-    // Format the timestamp in IST for response
-    const formattedLocation = {
-      ...lastLocation.toObject(),
-      timestamp: moment(lastLocation.timestamp)
-        .tz("Asia/Kolkata")
-        .format("YYYY-MM-DD HH:mm:ss"),
-      formattedTime: moment(lastLocation.timestamp)
-        .tz("Asia/Kolkata")
-        .format("DD MMM YYYY, h:mm A"),
-    };
+    // Format the response data
+    const formattedLocations = lastLocations.map((location) => {
+      const userId = location.userId.toString();
+      return {
+        ...location,
+        timestamp: moment(location.timestamp)
+          .tz("Asia/Kolkata")
+          .format("YYYY-MM-DD HH:mm:ss"),
+        formattedTime: moment(location.timestamp)
+          .tz("Asia/Kolkata")
+          .format("DD MMM YYYY, h:mm A"),
+        userStatus: activeUsers.has(userId)
+          ? activeUsers.get(userId)
+          : { isActive: false },
+      };
+    });
 
     return res.json({
       success: true,
-      data: formattedLocation,
-      userStatus: activeUsers.has(userId)
-        ? activeUsers.get(userId)
-        : { isActive: false },
+      count: formattedLocations.length,
+      data: formattedLocations,
     });
   } catch (error) {
-    console.error("Error fetching last location:", error);
+    console.error("Error fetching last locations:", error);
     return res.status(500).json({
       success: false,
       message: "Error fetching location data",
